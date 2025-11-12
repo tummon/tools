@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timezone Converter</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            margin-top: 0;
+            color: #333;
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+        input[type="time"] {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        select {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            background: white;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .output {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border-left: 4px solid #007bff;
+        }
+        .output-text {
+            font-size: 18px;
+            color: #333;
+            word-wrap: break-word;
+        }
+        .copy-button {
+            margin-top: 10px;
+            background: #28a745;
+        }
+        .copy-button:hover {
+            background: #218838;
+        }
+        .copied {
+            background: #5cb85c !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Timezone Converter</h1>
+
+        <div class="input-group">
+            <label for="time-input">Select Time:</label>
+            <input type="time" id="time-input">
+        </div>
+
+        <div class="input-group">
+            <label for="timezone-input">Select Timezone:</label>
+            <select id="timezone-input">
+                <option value="Europe/Dublin" selected>🇮🇪 Ireland (Dublin)</option>
+                <option value="Europe/Madrid">🇪🇸 Spain (Madrid)</option>
+                <option value="Europe/Budapest">🇭🇺 Hungary (Budapest)</option>
+                <option value="America/New_York">🇺🇸 USA (EST)</option>
+            </select>
+        </div>
+
+        <button onclick="setCurrentTime()">Set to Current Time</button>
+
+        <div class="output">
+            <div class="output-text" id="output"></div>
+            <button class="copy-button" onclick="copyToClipboard()">Copy to Clipboard</button>
+        </div>
+    </div>
+
+    <script>
+        const timeInput = document.getElementById('time-input');
+        const timezoneInput = document.getElementById('timezone-input');
+        const output = document.getElementById('output');
+
+        function updateOutput() {
+            const timeValue = timeInput.value;
+            if (!timeValue) return;
+
+            const [hours, minutes] = timeValue.split(':').map(Number);
+            const selectedTimezone = timezoneInput.value;
+
+            // Create a date object in the selected timezone
+            // We use today's date to handle DST correctly
+            const today = new Date();
+            const dateString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}T${timeValue}:00`;
+
+            // Create a date assuming the input time is in the selected timezone
+            const inputDate = new Date(dateString);
+
+            // Get the offset difference between selected timezone and UTC
+            const formatter = new Intl.DateTimeFormat('en-US', {
+                timeZone: selectedTimezone,
+                hour: 'numeric',
+                minute: 'numeric',
+                hour12: false,
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+
+            // Create base date in selected timezone
+            const parts = formatter.formatToParts(inputDate);
+            const tzHour = parseInt(parts.find(p => p.type === 'hour').value);
+            const tzMinute = parseInt(parts.find(p => p.type === 'minute').value);
+
+            // Calculate offset
+            const offset = (hours - tzHour) * 60 + (minutes - tzMinute);
+
+            // Adjust input date by offset to get UTC equivalent
+            const utcDate = new Date(inputDate.getTime() + offset * 60000);
+
+            // Format time for each timezone
+            const ireland = formatTime(utcDate, 'Europe/Dublin');
+            const spainHungary = formatTime(utcDate, 'Europe/Madrid'); // Spain and Hungary are in the same timezone
+            const usa = formatTime(utcDate, 'America/New_York');
+
+            output.textContent = `🇮🇪 ${ireland} / 🇭🇺🇪🇸 ${spainHungary} / 🇺🇸 ${usa}`;
+        }
+
+        function formatTime(date, timezone) {
+            const formatter = new Intl.DateTimeFormat('en-US', {
+                timeZone: timezone,
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+            });
+            return formatter.format(date).toLowerCase();
+        }
+
+        function setCurrentTime() {
+            const now = new Date();
+            const selectedTimezone = timezoneInput.value;
+
+            // Get the current time in the selected timezone
+            const formatter = new Intl.DateTimeFormat('en-US', {
+                timeZone: selectedTimezone,
+                hour: 'numeric',
+                minute: 'numeric',
+                hour12: false
+            });
+
+            const parts = formatter.formatToParts(now);
+            const hours = String(parts.find(p => p.type === 'hour').value).padStart(2, '0');
+            const minutes = String(parts.find(p => p.type === 'minute').value).padStart(2, '0');
+
+            timeInput.value = `${hours}:${minutes}`;
+            updateOutput();
+        }
+
+        function copyToClipboard() {
+            const text = output.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const button = event.target;
+                const originalText = button.textContent;
+                button.textContent = 'Copied!';
+                button.classList.add('copied');
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.classList.remove('copied');
+                }, 2000);
+            });
+        }
+
+        // Update output when inputs change
+        timeInput.addEventListener('change', updateOutput);
+        timezoneInput.addEventListener('change', updateOutput);
+
+        // Initialize with current time in Ireland
+        setCurrentTime();
+    </script>
+</body>
+</html>
