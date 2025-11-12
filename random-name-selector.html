@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random Name Selector</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .names-section {
+            margin-bottom: 30px;
+        }
+        textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 15px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-family: inherit;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .hint {
+            font-size: 14px;
+            color: #666;
+            margin-top: 8px;
+        }
+        .buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        button {
+            flex: 1;
+            min-width: 150px;
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .pick-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .pick-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        .pick-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .reset-btn {
+            background: #f0f0f0;
+            color: #333;
+        }
+        .reset-btn:hover {
+            background: #e0e0e0;
+        }
+        .result {
+            text-align: center;
+            padding: 30px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border-radius: 10px;
+            margin-bottom: 20px;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .picked-name {
+            font-size: 48px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            animation: fadeInScale 0.5s ease;
+        }
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        .result-placeholder {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.8);
+            font-style: italic;
+        }
+        .status {
+            text-align: center;
+            font-size: 16px;
+            color: #666;
+            margin-top: 20px;
+        }
+        .remaining-names {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        .remaining-names h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+            font-size: 16px;
+        }
+        .remaining-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .name-chip {
+            background: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            color: #555;
+            border: 1px solid #ddd;
+        }
+        .all-picked {
+            color: #f5576c;
+            font-weight: 600;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Random Name Selector</h1>
+
+        <div class="names-section">
+            <label for="namesList" style="display: block; margin-bottom: 10px; font-weight: 600; color: #333;">
+                Names (one per line):
+            </label>
+            <textarea id="namesList" placeholder="Enter one name per line..."></textarea>
+            <div class="hint">Edit the list as needed. Refresh the page to restore defaults.</div>
+        </div>
+
+        <div class="buttons">
+            <button id="pickBtn" class="pick-btn">Pick Random Name</button>
+            <button id="resetBtn" class="reset-btn">Reset Round</button>
+        </div>
+
+        <div class="result">
+            <div id="resultText" class="result-placeholder">Click "Pick Random Name" to begin</div>
+        </div>
+
+        <div class="status" id="status"></div>
+
+        <div class="remaining-names" id="remainingSection">
+            <h3>Remaining Names:</h3>
+            <div class="remaining-list" id="remainingList"></div>
+        </div>
+    </div>
+
+    <script>
+        const DEFAULT_NAMES = "Aaron\nColm\nColman\nJake\nJohn\nPeter P\nPeter N\nRabah\nSean\nStephen";
+
+        let initialNames = [];
+        let availableNames = [];
+        let pickedName = null;
+
+        const namesList = document.getElementById('namesList');
+        const pickBtn = document.getElementById('pickBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const resultText = document.getElementById('resultText');
+        const status = document.getElementById('status');
+        const remainingList = document.getElementById('remainingList');
+
+        // Initialize with default names
+        function init() {
+            namesList.value = DEFAULT_NAMES;
+            updateNamesFromTextarea();
+        }
+
+        // Parse names from textarea and set as initial list
+        function updateNamesFromTextarea() {
+            const text = namesList.value.trim();
+            if (!text) {
+                initialNames = [];
+                availableNames = [];
+            } else {
+                initialNames = text.split('\n').map(name => name.trim()).filter(name => name);
+                availableNames = [...initialNames];
+            }
+            updateUI();
+        }
+
+        // Pick a random name
+        function pickRandomName() {
+            if (availableNames.length === 0) return;
+
+            const randomIndex = Math.floor(Math.random() * availableNames.length);
+            pickedName = availableNames[randomIndex];
+            availableNames.splice(randomIndex, 1);
+
+            resultText.textContent = pickedName;
+            resultText.className = 'picked-name';
+
+            updateUI();
+        }
+
+        // Reset to initial state (when picking first began)
+        function resetRound() {
+            availableNames = [...initialNames];
+            pickedName = null;
+            resultText.textContent = "Click \"Pick Random Name\" to begin";
+            resultText.className = 'result-placeholder';
+            updateUI();
+        }
+
+        // Update UI based on current state
+        function updateUI() {
+            // Update pick button state
+            if (availableNames.length === 0) {
+                pickBtn.disabled = true;
+                if (initialNames.length > 0) {
+                    status.innerHTML = '<span class="all-picked">All names have been picked!</span>';
+                }
+            } else {
+                pickBtn.disabled = false;
+                status.textContent = `${availableNames.length} of ${initialNames.length} names remaining`;
+            }
+
+            // Update remaining names display
+            remainingList.innerHTML = '';
+            if (availableNames.length > 0) {
+                availableNames.forEach(name => {
+                    const chip = document.createElement('span');
+                    chip.className = 'name-chip';
+                    chip.textContent = name;
+                    remainingList.appendChild(chip);
+                });
+            } else if (initialNames.length > 0) {
+                remainingList.innerHTML = '<span class="name-chip" style="border-color: #f5576c; color: #f5576c;">None remaining</span>';
+            } else {
+                remainingList.innerHTML = '<span class="name-chip">Add names above to begin</span>';
+            }
+        }
+
+        // Event listeners
+        pickBtn.addEventListener('click', pickRandomName);
+        resetBtn.addEventListener('click', resetRound);
+
+        // Update initial names when textarea changes
+        namesList.addEventListener('input', updateNamesFromTextarea);
+        namesList.addEventListener('blur', updateNamesFromTextarea);
+
+        // Initialize on page load
+        init();
+    </script>
+</body>
+</html>
