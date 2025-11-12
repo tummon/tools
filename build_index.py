@@ -27,8 +27,14 @@ def build_index():
         tools = json.loads(TOOLS_JSON_PATH.read_text("utf-8"))
 
     markdown_content = README_PATH.read_text("utf-8")
+
+    # Remove the "## Tools" section and everything after it from README
+    # We'll generate this section from tools.json instead
+    import re
+    markdown_before_tools = re.split(r'^## Tools.*', markdown_content, flags=re.MULTILINE)[0]
+
     md = markdown.Markdown(extensions=["extra"])
-    body_html = md.convert(markdown_content)
+    body_html = md.convert(markdown_before_tools)
 
     # Generate tools list HTML from tools.json if available
     tools_list_html = ""
@@ -37,21 +43,10 @@ def build_index():
         for tool in tools:
             tools_list_html += f'  <li><a href="{tool["link"]}">{tool["title"]}</a> - {tool["description"]}</li>\n'
         tools_list_html += "</ul>\n"
-
-    # Replace the Tools section in body_html if it exists
-    # Otherwise append the tools list
-    if "## Tools" in markdown_content or "<h2>Tools</h2>" in body_html:
-        # Find and replace the tools section
-        import re
-        # Remove any existing tools section (h2 Tools and following ul)
-        body_html = re.sub(
-            r'<h2>Tools</h2>.*?</ul>',
-            tools_list_html.strip(),
-            body_html,
-            flags=re.DOTALL
-        )
-    elif tools_list_html:
         body_html += "\n" + tools_list_html
+    else:
+        # If no tools.json, add empty tools section
+        body_html += "\n<h2>Tools</h2>\n<p><em>No tools available yet.</em></p>\n"
 
     full_html = f"""<!DOCTYPE html>
 <html lang="en">
