@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Example Tool</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        h1 {
+            margin-top: 0;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #4a90e2;
+        }
+
+        button {
+            background-color: #4a90e2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #357abd;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .result.visible {
+            display: block;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Example Tool</h1>
+    <p>This tool counts the number of words in your text.</p>
+
+    <textarea id="input" placeholder="Enter your text here..."></textarea>
+
+    <button id="countBtn">Count Words</button>
+    <button id="copyBtn" style="display: none;">Copy Result</button>
+
+    <div id="result" class="result"></div>
+
+    <script>
+        const input = document.getElementById('input');
+        const countBtn = document.getElementById('countBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const result = document.getElementById('result');
+
+        countBtn.addEventListener('click', () => {
+            const text = input.value.trim();
+
+            if (!text) {
+                result.textContent = 'Please enter some text.';
+                result.classList.add('visible');
+                copyBtn.style.display = 'none';
+                return;
+            }
+
+            const words = text.split(/\s+/).length;
+            const chars = text.length;
+            const lines = text.split('\n').length;
+
+            result.innerHTML = `
+                <strong>Results:</strong><br>
+                Words: ${words}<br>
+                Characters: ${chars}<br>
+                Lines: ${lines}
+            `;
+            result.classList.add('visible');
+            copyBtn.style.display = 'inline-block';
+        });
+
+        copyBtn.addEventListener('click', () => {
+            const text = result.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = copyBtn.textContent;
+                copyBtn.textContent = 'Copied!';
+                setTimeout(() => {
+                    copyBtn.textContent = originalText;
+                }, 2000);
+            });
+        });
+    </script>
+</body>
+</html>

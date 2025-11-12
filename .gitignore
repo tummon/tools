@@ -6,3 +6,4 @@ index.html
 tools.json
 node_modules/
 .DS_Store
+uv.lock
