@@ -19,7 +19,7 @@ The build scripts are orchestrated by `build.sh`, which runs both scripts in ord
 
 ```bash
 # Full build (metadata + index)
-./build.sh
+source ./venv/bin/activate ./build.sh
 
 # Or manually:
 uv run python gather_metadata.py  # Generate tools.json from HTML files
