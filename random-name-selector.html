@@ -145,6 +145,26 @@
             font-size: 14px;
             color: #555;
             border: 1px solid #ddd;
+            transition: all 0.15s ease;
+        }
+        .name-chip.highlight {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+            transform: scale(1.1);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        .name-chip.winner {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border-color: #f5576c;
+            transform: scale(1.15);
+            box-shadow: 0 6px 20px rgba(245, 87, 108, 0.5);
+            animation: pulse 0.5s ease;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1.15); }
+            50% { transform: scale(1.25); }
         }
         .all-picked {
             color: #f5576c;
@@ -215,18 +235,94 @@
             updateUI();
         }
 
-        // Pick a random name
+        // Pick a random name with animation
         function pickRandomName() {
             if (availableNames.length === 0) return;
 
+            // Disable button during animation
+            pickBtn.disabled = true;
+
+            // Pre-select the winner
             const randomIndex = Math.floor(Math.random() * availableNames.length);
-            pickedName = availableNames[randomIndex];
-            availableNames.splice(randomIndex, 1);
+            const winner = availableNames[randomIndex];
 
-            resultText.textContent = pickedName;
-            resultText.className = 'picked-name';
+            // Animation parameters
+            const totalDuration = 3000; // 3 seconds total
+            const initialDelay = 80; // Start fast (80ms between highlights)
+            const finalDelay = 500; // End slow (500ms between highlights)
+            let currentDelay = initialDelay;
+            let elapsed = 0;
+            let currentHighlightIndex = -1;
 
-            updateUI();
+            // Create a shuffled array of available names for random highlighting
+            const namesToHighlight = [...availableNames];
+
+            function animate() {
+                // Remove previous highlight
+                const chips = remainingList.querySelectorAll('.name-chip');
+                chips.forEach(chip => chip.classList.remove('highlight'));
+
+                // Pick a random name to highlight
+                currentHighlightIndex = Math.floor(Math.random() * namesToHighlight.length);
+                const nameToHighlight = namesToHighlight[currentHighlightIndex];
+
+                // Highlight it in the UI
+                chips.forEach(chip => {
+                    if (chip.textContent === nameToHighlight) {
+                        chip.classList.add('highlight');
+                    }
+                });
+
+                // Update result display with current highlight
+                resultText.textContent = nameToHighlight;
+                resultText.className = 'picked-name';
+
+                elapsed += currentDelay;
+
+                // Calculate progress (0 to 1)
+                const progress = elapsed / totalDuration;
+
+                // Gradually slow down (ease-out curve)
+                currentDelay = initialDelay + (finalDelay - initialDelay) * Math.pow(progress, 2);
+
+                // Continue animation or finish
+                if (elapsed < totalDuration) {
+                    setTimeout(animate, currentDelay);
+                } else {
+                    // Animation complete - show the winner
+                    finishAnimation(winner, randomIndex);
+                }
+            }
+
+            function finishAnimation(winner, winnerIndex) {
+                // Remove all highlights
+                const chips = remainingList.querySelectorAll('.name-chip');
+                chips.forEach(chip => chip.classList.remove('highlight'));
+
+                // Highlight the winner
+                chips.forEach(chip => {
+                    if (chip.textContent === winner) {
+                        chip.classList.add('winner');
+                        setTimeout(() => chip.classList.remove('winner'), 1000);
+                    }
+                });
+
+                // Update state
+                pickedName = winner;
+                availableNames.splice(winnerIndex, 1);
+
+                // Update result display
+                resultText.textContent = pickedName;
+                resultText.className = 'picked-name';
+
+                // Re-enable button and update UI
+                setTimeout(() => {
+                    updateUI();
+                }, 500);
+            }
+
+            // Start the animation
+            animate();
         }
 
         // Reset to initial state (when picking first began)
