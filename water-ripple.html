@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Water Ripple Effect</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        body {
+            background: #001a33;
+            cursor: none;
+        }
+
+        canvas {
+            display: block;
+            background: linear-gradient(to bottom, #0a4d8c 0%, #003d6b 50%, #001f3d 100%);
+        }
+
+        .cursor {
+            position: fixed;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            transition: width 0.15s, height 0.15s;
+        }
+
+        .cursor.active {
+            width: 40px;
+            height: 40px;
+        }
+
+        .info {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            color: rgba(255, 255, 255, 0.7);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 14px;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+        }
+
+        .info h2 {
+            margin-bottom: 10px;
+            font-size: 18px;
+            color: #fff;
+        }
+
+        .info p {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="info">
+        <h2>Water Ripple Effect</h2>
+        <p>Move your mouse to create ripples</p>
+        <p>Click for larger waves</p>
+    </div>
+    <div class="cursor"></div>
+    <canvas id="waterCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('waterCanvas');
+        const ctx = canvas.getContext('2d');
+        const cursor = document.querySelector('.cursor');
+
+        // Set canvas to full screen
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Water simulation parameters
+        const cols = Math.floor(canvas.width / 4);
+        const rows = Math.floor(canvas.height / 4);
+        const damping = 0.99;
+        const spread = 0.5;
+
+        // Create water buffers
+        let current = new Array(cols * rows).fill(0);
+        let previous = new Array(cols * rows).fill(0);
+
+        // Mouse tracking
+        let mouseX = 0;
+        let mouseY = 0;
+        let mouseDown = false;
+
+        function index(x, y) {
+            if (x < 0 || x >= cols || y < 0 || y >= rows) {
+                return -1;
+            }
+            return x + y * cols;
+        }
+
+        function addRipple(x, y, intensity) {
+            const gridX = Math.floor((x / canvas.width) * cols);
+            const gridY = Math.floor((y / canvas.height) * rows);
+
+            // Add ripple with falloff
+            for (let offsetY = -2; offsetY <= 2; offsetY++) {
+                for (let offsetX = -2; offsetX <= 2; offsetX++) {
+                    const idx = index(gridX + offsetX, gridY + offsetY);
+                    if (idx !== -1) {
+                        const distance = Math.sqrt(offsetX * offsetX + offsetY * offsetY);
+                        const falloff = Math.max(0, 1 - distance / 3);
+                        previous[idx] += intensity * falloff;
+                    }
+                }
+            }
+        }
+
+        function updateWater() {
+            // Update water simulation
+            for (let y = 1; y < rows - 1; y++) {
+                for (let x = 1; x < cols - 1; x++) {
+                    const idx = index(x, y);
+
+                    // Calculate average of neighboring cells
+                    const left = current[index(x - 1, y)];
+                    const right = current[index(x + 1, y)];
+                    const top = current[index(x, y - 1)];
+                    const bottom = current[index(x, y + 1)];
+
+                    const average = (left + right + top + bottom) * spread;
+
+                    // Apply wave equation
+                    previous[idx] = average - previous[idx];
+                    previous[idx] *= damping;
+                }
+            }
+
+            // Swap buffers
+            [current, previous] = [previous, current];
+        }
+
+        function render() {
+            // Clear canvas
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#0a4d8c');
+            gradient.addColorStop(0.5, '#003d6b');
+            gradient.addColorStop(1, '#001f3d');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw water surface
+            const cellWidth = canvas.width / cols;
+            const cellHeight = canvas.height / rows;
+
+            for (let y = 0; y < rows - 1; y++) {
+                for (let x = 0; x < cols - 1; x++) {
+                    const idx = index(x, y);
+                    const height = current[idx];
+
+                    // Map height to color
+                    const brightness = Math.min(255, Math.max(0, 128 + height * 50));
+                    const alpha = Math.min(1, Math.abs(height) / 10);
+
+                    if (Math.abs(height) > 0.1) {
+                        // Draw ripple
+                        const hue = 200 + height * 5;
+                        const lightness = 50 + height * 2;
+                        ctx.fillStyle = `hsla(${hue}, 80%, ${lightness}%, ${alpha * 0.6})`;
+
+                        const px = x * cellWidth;
+                        const py = y * cellHeight;
+
+                        ctx.fillRect(px, py, cellWidth + 1, cellHeight + 1);
+
+                        // Add highlights
+                        if (height > 0.5) {
+                            ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.3})`;
+                            ctx.fillRect(px, py, cellWidth + 1, cellHeight / 2);
+                        }
+                    }
+                }
+            }
+        }
+
+        function animate() {
+            updateWater();
+            render();
+            requestAnimationFrame(animate);
+        }
+
+        // Mouse event handlers
+        window.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+
+            cursor.style.left = mouseX + 'px';
+            cursor.style.top = mouseY + 'px';
+
+            // Add continuous ripples on mouse move
+            addRipple(mouseX, mouseY, 2);
+        });
+
+        window.addEventListener('mousedown', (e) => {
+            mouseDown = true;
+            cursor.classList.add('active');
+            addRipple(e.clientX, e.clientY, 15);
+        });
+
+        window.addEventListener('mouseup', () => {
+            mouseDown = false;
+            cursor.classList.remove('active');
+        });
+
+        window.addEventListener('click', (e) => {
+            addRipple(e.clientX, e.clientY, 20);
+        });
+
+        // Touch support for mobile
+        window.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            addRipple(touch.clientX, touch.clientY, 3);
+        }, { passive: false });
+
+        window.addEventListener('touchstart', (e) => {
+            const touch = e.touches[0];
+            addRipple(touch.clientX, touch.clientY, 15);
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            // Reinitialize water grid
+            const newCols = Math.floor(canvas.width / 4);
+            const newRows = Math.floor(canvas.height / 4);
+
+            if (newCols !== cols || newRows !== rows) {
+                current = new Array(newCols * newRows).fill(0);
+                previous = new Array(newCols * newRows).fill(0);
+            }
+        });
+
+        // Start animation
+        animate();
+    </script>
+</body>
+</html>
