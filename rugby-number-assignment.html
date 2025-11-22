@@ -115,6 +115,7 @@
             transition: all 0.3s ease;
             opacity: 0;
             animation: fadeInUp 0.5s ease forwards;
+            min-height: 100px;
         }
         .player-card:nth-child(n) {
             animation-delay: calc(0.05s * var(--index));
@@ -151,7 +152,40 @@
             font-size: 18px;
             font-weight: 600;
             color: #333;
-            margin-top: 8px;
+            margin-bottom: 12px;
+        }
+        .numbers-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .number-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .number-badge {
+            font-size: 24px;
+            font-weight: bold;
+            color: #11998e;
+            min-width: 35px;
+        }
+        .number-badge.split {
+            opacity: 0.6;
+            font-size: 20px;
+        }
+        .position-text {
+            font-size: 12px;
+            color: #666;
+            flex: 1;
+        }
+        .weight-badge {
+            background: #fef3c7;
+            color: #92400e;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
         }
         .error-message {
             background: #fee;
@@ -179,7 +213,7 @@
         <div class="subtitle">Randomly assign rugby positions (1-15) to your team</div>
 
         <div class="info-box">
-            💡 Enter up to 15 names (one per line). Each name will be randomly assigned a unique rugby number and position.
+            💡 All 15 rugby numbers (1-15) will be randomly distributed among your names. Each person gets at least 1 number, with seconds distributed when possible. If one number remains, it's split between 2 people at half weight.
         </div>
 
         <div class="names-section">
@@ -187,7 +221,7 @@
                 Names (one per line, max 15):
             </label>
             <textarea id="namesList" placeholder="Enter one name per line..."></textarea>
-            <div class="hint">You can enter up to 15 names for a full starting lineup.</div>
+            <div class="hint">Enter your names - all 15 rugby numbers will be distributed among them.</div>
         </div>
 
         <div class="buttons">
@@ -292,21 +326,69 @@
             const names = getNames();
             if (!names) return;
 
-            // Get available positions (1 to number of names)
-            const availableNumbers = Array.from({ length: names.length }, (_, i) => i + 1);
+            // Always use all 15 rugby numbers
+            const allNumbers = Array.from({ length: 15 }, (_, i) => i + 1);
 
-            // Shuffle the numbers
-            const shuffledNumbers = shuffleArray(availableNumbers);
+            // Shuffle all 15 numbers randomly
+            const shuffledNumbers = shuffleArray(allNumbers);
 
-            // Create assignments
-            const assignments = names.map((name, index) => ({
+            // Create assignments - each person starts with empty numbers array
+            const assignments = names.map(name => ({
                 name: name,
-                number: shuffledNumbers[index],
-                position: RUGBY_POSITIONS[shuffledNumbers[index]]
+                numbers: []  // Array of {number, position, weight}
             }));
 
-            // Sort by number for display
-            assignments.sort((a, b) => a.number - b.number);
+            let numberIndex = 0;
+
+            // First round: Give each person 1 number
+            for (let i = 0; i < names.length; i++) {
+                const num = shuffledNumbers[numberIndex++];
+                assignments[i].numbers.push({
+                    number: num,
+                    position: RUGBY_POSITIONS[num],
+                    weight: 1.0
+                });
+            }
+
+            // Second round: Distribute remaining numbers
+            const remaining = 15 - names.length;
+
+            if (remaining > 0) {
+                // Give full second numbers to as many people as possible
+                const fullSeconds = Math.min(remaining, names.length);
+
+                for (let i = 0; i < fullSeconds; i++) {
+                    const num = shuffledNumbers[numberIndex++];
+                    assignments[i].numbers.push({
+                        number: num,
+                        position: RUGBY_POSITIONS[num],
+                        weight: 1.0
+                    });
+                }
+
+                // If exactly 1 number remains, split it between 2 people
+                const leftover = remaining - fullSeconds;
+                if (leftover === 1) {
+                    const splitNum = shuffledNumbers[numberIndex];
+
+                    // First try to give to people who don't have a second number
+                    let peopleToSplit = assignments.filter(a => a.numbers.length === 1);
+
+                    // If fewer than 2 people without second number, just use first 2 people
+                    if (peopleToSplit.length < 2) {
+                        peopleToSplit = assignments.slice(0, 2);
+                    }
+
+                    // Split between 2 people
+                    for (let i = 0; i < 2; i++) {
+                        peopleToSplit[i].numbers.push({
+                            number: splitNum,
+                            position: RUGBY_POSITIONS[splitNum],
+                            weight: 0.5
+                        });
+                    }
+                }
+            }
 
             displayTeam(assignments);
         }
@@ -320,10 +402,26 @@
                 card.className = 'player-card';
                 card.style.setProperty('--index', index);
 
+                // Build numbers list HTML
+                const numbersHTML = assignment.numbers.map(numObj => {
+                    const isSplit = numObj.weight < 1.0;
+                    const badgeClass = isSplit ? 'number-badge split' : 'number-badge';
+                    const weightBadge = isSplit ? '<span class="weight-badge">½ weight</span>' : '';
+
+                    return `
+                        <div class="number-item">
+                            <div class="${badgeClass}">${numObj.number}</div>
+                            <div class="position-text">${numObj.position}</div>
+                            ${weightBadge}
+                        </div>
+                    `;
+                }).join('');
+
                 card.innerHTML = `
-                    <div class="player-number">${assignment.number}</div>
-                    <div class="player-position">${assignment.position}</div>
                     <div class="player-name">${assignment.name}</div>
+                    <div class="numbers-list">
+                        ${numbersHTML}
+                    </div>
                 `;
 
                 teamGrid.appendChild(card);
