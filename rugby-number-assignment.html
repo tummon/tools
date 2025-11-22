@@ -213,7 +213,7 @@
         <div class="subtitle">Randomly assign rugby positions (1-15) to your team</div>
 
         <div class="info-box">
-            💡 All 15 rugby numbers (1-15) will be randomly distributed among your names. Each person gets at least 1 number, with seconds distributed when possible. If one number remains, it's split between 2 people at half weight.
+            💡 All 15 rugby numbers (1-15) will be evenly distributed among your names. Everyone gets the same total weight of numbers - if there aren't enough for everyone to get 2 full numbers, remaining numbers are split fairly among all people.
         </div>
 
         <div class="names-section">
@@ -350,42 +350,53 @@
                 });
             }
 
-            // Second round: Distribute remaining numbers
+            // Second round: Distribute remaining numbers EVENLY
             const remaining = 15 - names.length;
 
             if (remaining > 0) {
-                // Give full second numbers to as many people as possible
-                const fullSeconds = Math.min(remaining, names.length);
-
-                for (let i = 0; i < fullSeconds; i++) {
-                    const num = shuffledNumbers[numberIndex++];
-                    assignments[i].numbers.push({
-                        number: num,
-                        position: RUGBY_POSITIONS[num],
-                        weight: 1.0
-                    });
-                }
-
-                // If exactly 1 number remains, split it between 2 people
-                const leftover = remaining - fullSeconds;
-                if (leftover === 1) {
-                    const splitNum = shuffledNumbers[numberIndex];
-
-                    // First try to give to people who don't have a second number
-                    let peopleToSplit = assignments.filter(a => a.numbers.length === 1);
-
-                    // If fewer than 2 people without second number, just use first 2 people
-                    if (peopleToSplit.length < 2) {
-                        peopleToSplit = assignments.slice(0, 2);
+                // Check if everyone can get a full second number
+                if (remaining >= names.length) {
+                    // Everyone gets a full second number
+                    for (let i = 0; i < names.length; i++) {
+                        const num = shuffledNumbers[numberIndex++];
+                        assignments[i].numbers.push({
+                            number: num,
+                            position: RUGBY_POSITIONS[num],
+                            weight: 1.0
+                        });
                     }
 
-                    // Split between 2 people
-                    for (let i = 0; i < 2; i++) {
-                        peopleToSplit[i].numbers.push({
-                            number: splitNum,
-                            position: RUGBY_POSITIONS[splitNum],
-                            weight: 0.5
-                        });
+                    // Handle any leftover (will be 1 or 0)
+                    const leftover = remaining - names.length;
+                    if (leftover === 1) {
+                        const splitNum = shuffledNumbers[numberIndex];
+                        // Split between first 2 people
+                        for (let i = 0; i < 2; i++) {
+                            assignments[i].numbers.push({
+                                number: splitNum,
+                                position: RUGBY_POSITIONS[splitNum],
+                                weight: 0.5
+                            });
+                        }
+                    }
+                } else {
+                    // Not enough for everyone to get a full second number
+                    // Split ALL remaining numbers evenly among ALL people
+                    // Each number is shared by 2 people at 0.5 weight
+
+                    let personIndex = 0;
+                    for (let i = 0; i < remaining; i++) {
+                        const num = shuffledNumbers[numberIndex++];
+
+                        // Give this number to 2 consecutive people at half weight
+                        for (let j = 0; j < 2; j++) {
+                            assignments[personIndex % names.length].numbers.push({
+                                number: num,
+                                position: RUGBY_POSITIONS[num],
+                                weight: 0.5
+                            });
+                            personIndex++;
+                        }
                     }
                 }
             }
