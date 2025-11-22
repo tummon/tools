@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rugby Number Assignment</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+        .names-section {
+            margin-bottom: 30px;
+        }
+        textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 15px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-family: inherit;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #11998e;
+        }
+        .hint {
+            font-size: 14px;
+            color: #666;
+            margin-top: 8px;
+        }
+        .buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        button {
+            flex: 1;
+            min-width: 150px;
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .assign-btn {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+        .assign-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(17, 153, 142, 0.4);
+        }
+        .assign-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .reset-btn {
+            background: #f0f0f0;
+            color: #333;
+        }
+        .reset-btn:hover {
+            background: #e0e0e0;
+        }
+        .results {
+            display: none;
+            margin-top: 30px;
+        }
+        .results.show {
+            display: block;
+        }
+        .results h2 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .player-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 8px;
+            padding: 15px;
+            border-left: 4px solid #11998e;
+            transition: all 0.3s ease;
+            opacity: 0;
+            animation: fadeInUp 0.5s ease forwards;
+        }
+        .player-card:nth-child(n) {
+            animation-delay: calc(0.05s * var(--index));
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .player-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        .player-number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #11998e;
+            line-height: 1;
+            margin-bottom: 5px;
+        }
+        .player-position {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+        .player-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-top: 8px;
+        }
+        .error-message {
+            background: #fee;
+            border: 2px solid #fcc;
+            border-radius: 8px;
+            padding: 15px;
+            color: #c33;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .info-box {
+            background: #f0f9ff;
+            border: 2px solid #bae6fd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #0c4a6e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Rugby Number Assignment</h1>
+        <div class="subtitle">Randomly assign rugby positions (1-15) to your team</div>
+
+        <div class="info-box">
+            💡 Enter up to 15 names (one per line). Each name will be randomly assigned a unique rugby number and position.
+        </div>
+
+        <div class="names-section">
+            <label for="namesList" style="display: block; margin-bottom: 10px; font-weight: 600; color: #333;">
+                Names (one per line, max 15):
+            </label>
+            <textarea id="namesList" placeholder="Enter one name per line..."></textarea>
+            <div class="hint">You can enter up to 15 names for a full starting lineup.</div>
+        </div>
+
+        <div class="buttons">
+            <button id="assignBtn" class="assign-btn">Assign Numbers</button>
+            <button id="resetBtn" class="reset-btn">Clear All</button>
+        </div>
+
+        <div id="errorMessage" class="error-message" style="display: none;"></div>
+
+        <div class="results" id="results">
+            <h2>Your Rugby Team</h2>
+            <div class="team-grid" id="teamGrid"></div>
+        </div>
+    </div>
+
+    <script>
+        const RUGBY_POSITIONS = {
+            1: "Loosehead Prop",
+            2: "Hooker",
+            3: "Tighthead Prop",
+            4: "Lock",
+            5: "Lock",
+            6: "Blindside Flanker",
+            7: "Openside Flanker",
+            8: "Number Eight",
+            9: "Scrum-Half",
+            10: "Fly-Half",
+            11: "Left Wing",
+            12: "Inside Centre",
+            13: "Outside Centre",
+            14: "Right Wing",
+            15: "Fullback"
+        };
+
+        const DEFAULT_NAMES = "Aaron\nColm\nColman\nJake\nJohn\nPeter P\nPeter N\nRabah\nSean\nStephen";
+
+        const namesList = document.getElementById('namesList');
+        const assignBtn = document.getElementById('assignBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const errorMessage = document.getElementById('errorMessage');
+        const results = document.getElementById('results');
+        const teamGrid = document.getElementById('teamGrid');
+
+        // Initialize with default names
+        function init() {
+            namesList.value = DEFAULT_NAMES;
+        }
+
+        // Show error message
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            setTimeout(() => {
+                errorMessage.style.display = 'none';
+            }, 4000);
+        }
+
+        // Parse and validate names
+        function getNames() {
+            const text = namesList.value.trim();
+            if (!text) {
+                showError('Please enter at least one name.');
+                return null;
+            }
+
+            const names = text.split('\n')
+                .map(name => name.trim())
+                .filter(name => name);
+
+            if (names.length === 0) {
+                showError('Please enter at least one name.');
+                return null;
+            }
+
+            if (names.length > 15) {
+                showError('Maximum 15 names allowed for a rugby starting lineup.');
+                return null;
+            }
+
+            // Check for duplicate names
+            const uniqueNames = new Set(names);
+            if (uniqueNames.size !== names.length) {
+                showError('Duplicate names detected. Please ensure all names are unique.');
+                return null;
+            }
+
+            return names;
+        }
+
+        // Shuffle array using Fisher-Yates algorithm
+        function shuffleArray(array) {
+            const shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+
+        // Assign numbers to names
+        function assignNumbers() {
+            const names = getNames();
+            if (!names) return;
+
+            // Get available positions (1 to number of names)
+            const availableNumbers = Array.from({ length: names.length }, (_, i) => i + 1);
+
+            // Shuffle the numbers
+            const shuffledNumbers = shuffleArray(availableNumbers);
+
+            // Create assignments
+            const assignments = names.map((name, index) => ({
+                name: name,
+                number: shuffledNumbers[index],
+                position: RUGBY_POSITIONS[shuffledNumbers[index]]
+            }));
+
+            // Sort by number for display
+            assignments.sort((a, b) => a.number - b.number);
+
+            displayTeam(assignments);
+        }
+
+        // Display the team assignments
+        function displayTeam(assignments) {
+            teamGrid.innerHTML = '';
+
+            assignments.forEach((assignment, index) => {
+                const card = document.createElement('div');
+                card.className = 'player-card';
+                card.style.setProperty('--index', index);
+
+                card.innerHTML = `
+                    <div class="player-number">${assignment.number}</div>
+                    <div class="player-position">${assignment.position}</div>
+                    <div class="player-name">${assignment.name}</div>
+                `;
+
+                teamGrid.appendChild(card);
+            });
+
+            results.classList.add('show');
+
+            // Scroll to results
+            setTimeout(() => {
+                results.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
+        }
+
+        // Reset form
+        function reset() {
+            namesList.value = '';
+            results.classList.remove('show');
+            teamGrid.innerHTML = '';
+            errorMessage.style.display = 'none';
+        }
+
+        // Event listeners
+        assignBtn.addEventListener('click', assignNumbers);
+        resetBtn.addEventListener('click', reset);
+
+        // Allow Enter key in textarea (Ctrl+Enter to submit)
+        namesList.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                assignNumbers();
+            }
+        });
+
+        // Initialize on page load
+        init();
+    </script>
+</body>
+</html>
