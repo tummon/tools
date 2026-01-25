@@ -598,9 +598,10 @@
 
                 row.positions.forEach(pos => {
                     const player = players[playerIndex];
+                    const idx = playerIndex; // Capture current index for closure
                     const playerDiv = document.createElement('div');
                     playerDiv.className = 'player';
-                    playerDiv.onclick = () => openModal(playerIndex);
+                    playerDiv.onclick = () => openModal(idx);
 
                     playerDiv.innerHTML = `
                         <div class="player-circle">${player.position}</div>
