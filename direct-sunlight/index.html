@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#1b2142" />
+    <meta name="description" content="Find the sunny spots in your city: building shadows at any time of day and year." />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <title>Direct Sunlight</title>
+    <script type="module" crossorigin src="./assets/index-DRFFpyPr.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-DSjxuSqo.css">
+  </head>
+  <body>
+    <div id="map"></div>
+
+    <div id="search" class="search"></div>
+    <div id="status" class="status"></div>
+    <div id="spot" class="spot"></div>
+
+    <div class="panel">
+      <div class="row top">
+        <div class="date">
+          <button id="prev-day" class="icon" aria-label="Previous day">‹</button>
+          <button id="date-label" class="date-label"></button>
+          <input id="date-input" type="date" tabindex="-1" aria-hidden="true" />
+          <button id="next-day" class="icon" aria-label="Next day">›</button>
+        </div>
+        <button id="now" class="chip">Now</button>
+        <div class="seg" role="tablist">
+          <button data-mode="instant" class="active">Sun at</button>
+          <button data-mode="hours">Sun hours</button>
+        </div>
+      </div>
+      <div class="row">
+        <button id="play" class="icon play" aria-label="Play day">
+          <svg viewBox="0 0 24 24" class="i-play"><path d="M8 5v14l11-7z" /></svg>
+          <svg viewBox="0 0 24 24" class="i-pause"><path d="M7 5h4v14H7zM13 5h4v14h-4z" /></svg>
+        </button>
+        <div id="timeline-slot" class="timeline-slot"></div>
+      </div>
+      <div class="row info-row">
+        <div id="info" class="info"></div>
+        <div class="legend">
+          <span>shade</span><i></i><span>sun</span>
+        </div>
+      </div>
+    </div>
+
+  </body>
+</html>
