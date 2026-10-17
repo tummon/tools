@@ -1,0 +1,10 @@
+{
+  "name": "Direct Sunlight",
+  "short_name": "Sunlight",
+  "description": "Find the sunny spots in your city: building shadows at any time of day and year.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#1b2142",
+  "theme_color": "#1b2142",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
